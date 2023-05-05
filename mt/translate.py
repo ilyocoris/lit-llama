@@ -25,6 +25,11 @@ def main_translate(
     tokenizer_path: Optional[Path] = None,
     quantize: Optional[str] = None,
 ):
+    """
+        quantize: Whether to quantize the model and using which method:
+        ``"llm.int8"``: LLM.int8() mode,
+        ``"gptq.int4"``: GPTQ 4-bit mode.
+    """
     ##### COPIED FROM main(...) IN generate.py #####
     if not checkpoint_path:
         checkpoint_path = Path(f"./checkpoints/lit-llama/7B/lit-llama.pth")
