@@ -19,7 +19,8 @@ python -m scripts.convert_checkpoint converted
 
 def convert_state_dict(state_dict: Dict[str, torch.Tensor], dtype: torch.dtype = torch.float32) -> Dict[str, torch.Tensor]:
     converted = {}
-    converted["transformer.wte.weight"] = state_dict["tok_embeddings.weight"].to(dtype)
+    converted["transformer.wte.weight"] = state_dict["tok_embeddings.weight"].to(
+        dtype)
     converted["lm_head.weight"] = state_dict["output.weight"].to(dtype)
     converted["transformer.ln_f.scale"] = state_dict["norm.weight"].to(dtype)
 
@@ -28,9 +29,12 @@ def convert_state_dict(state_dict: Dict[str, torch.Tensor], dtype: torch.dtype =
         # the wq, wk, wv from the FB model are stacked in our model as c_attn
         converted[f"transformer.h.{layer_idx}.attn.c_attn.weight"] = torch.cat(
             (
-                state_dict[f"layers.{layer_idx}.attention.wq.weight"].to(dtype),
-                state_dict[f"layers.{layer_idx}.attention.wk.weight"].to(dtype),
-                state_dict[f"layers.{layer_idx}.attention.wv.weight"].to(dtype),
+                state_dict[f"layers.{layer_idx}.attention.wq.weight"].to(
+                    dtype),
+                state_dict[f"layers.{layer_idx}.attention.wk.weight"].to(
+                    dtype),
+                state_dict[f"layers.{layer_idx}.attention.wv.weight"].to(
+                    dtype),
             )
         )
         converted[f"transformer.h.{layer_idx}.attn.c_proj.weight"] = state_dict[
@@ -47,8 +51,10 @@ def convert_state_dict(state_dict: Dict[str, torch.Tensor], dtype: torch.dtype =
             f"layers.{layer_idx}.feed_forward.w3.weight"
         ].to(dtype)
         # rms norm
-        converted[f"transformer.h.{layer_idx}.rms_1.scale"] = state_dict[f"layers.{layer_idx}.attention_norm.weight"].to(dtype)
-        converted[f"transformer.h.{layer_idx}.rms_2.scale"] = state_dict[f"layers.{layer_idx}.ffn_norm.weight"].to(dtype)
+        converted[f"transformer.h.{layer_idx}.rms_1.scale"] = state_dict[f"layers.{layer_idx}.attention_norm.weight"].to(
+            dtype)
+        converted[f"transformer.h.{layer_idx}.rms_2.scale"] = state_dict[f"layers.{layer_idx}.ffn_norm.weight"].to(
+            dtype)
     return converted
 
 
@@ -78,7 +84,9 @@ def meta_weights_for_nano_model(
     ckpt_dir = ckpt_dir / model_size
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    
+    # the tokenizer is the same for all model sizes, so we store it in the parent dir
+    shutil.copy(ckpt_dir.parent / "tokenizer.model", output_dir.parent)
+
     dt = getattr(torch, dtype, None)
     if not isinstance(dt, torch.dtype):
         raise ValueError(f"{dtype} is not a valid dtype.")
@@ -89,7 +97,8 @@ def meta_weights_for_nano_model(
     n_checkpoints = len(checkpoint_files)
 
     if n_checkpoints == 0:
-        raise RuntimeError(f"No checkpoints were found at ckpt_dir {ckpt_dir}. `consolidated.0*.pth` files expected at that location.")
+        raise RuntimeError(
+            f"No checkpoints were found at ckpt_dir {ckpt_dir}. `consolidated.0*.pth` files expected at that location.")
 
     # for the bigger models, there are multiple model-parallel checkpoints
     # and we combine them into one single file
@@ -128,8 +137,9 @@ def meta_weights_for_nano_model(
         attn = torch.clone(param)
         for i in range(n_checkpoints):
             for j in range(3):
-                param[j * dst_chunk_len + i * mat_len: j * dst_chunk_len + (i+1) * mat_len] = \
-                    attn[i * src_chunk_len + j * mat_len: i * src_chunk_len + (j+1) * mat_len]
+                param[j * dst_chunk_len + i * mat_len: j * dst_chunk_len + (i + 1) * mat_len] = \
+                    attn[i * src_chunk_len + j * mat_len: i *
+                         src_chunk_len + (j + 1) * mat_len]
 
         del attn
         gc.collect()
