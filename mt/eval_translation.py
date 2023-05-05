@@ -18,11 +18,13 @@ from comet import download_model, load_from_checkpoint
 
 
 def main_eval(
-    input_csv_file: str = "./mt/data/wmt19_en-de_translated.csv",
-    output_csv_file: str = "./mt/data/wmt19_en-de_eval.csv",
-    results_json_file: str = "./mt/results/wmt19_en-de_results.json",
+    input_csv_file: str = "./mt/data/wmt19_de-en_translated.csv",
+    output_csv_file: str = "./mt/data/wmt19_de-en_eval.csv",
+    results_json_file: str = "./mt/results/wmt19_de-en_results.json",
 ):
     df = pd.read_csv(input_csv_file)
+    # drop nas in mt column
+    df = df.dropna(subset=['mt'])
     df['bleu'] = [
         sentence_bleu(hyp, [ref]).score
         for hyp, ref in zip(df['mt'], df['ref'])

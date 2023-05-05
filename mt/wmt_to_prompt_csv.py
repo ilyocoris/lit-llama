@@ -8,15 +8,16 @@ from langchain import PromptTemplate, FewShotPromptTemplate
 
 example_prompt = PromptTemplate(
     template="{src_lang}: {src}\n{tgt_lang}: {ref}",
-    input_variables = ["src_lang", "src", "tgt_lang", "ref"],
+    input_variables=["src_lang", "src", "tgt_lang", "ref"],
 )
 
 
 def main(
     dataset: str = "wmt19",
     pair: str = "de-en",
+    direction: str = None,
     output_file: str = "./data/wmt19_de-en.csv",
-    ):
+):
     """
     Args:
         dataset: dataset name
@@ -24,9 +25,12 @@ def main(
         output_file: output file
     """
     # load dataset
-    print(f"Loading dataset {dataset} {pair}, note that if it is not cached it may take over an hour.")
+    print(
+        f"Loading dataset {dataset} {pair}, note that if it is not cached it may take over an hour.")
+    if not direction:
+        direction = pair
     dataset = load_dataset(dataset, pair)
-    src_lang, tgt_lang = pair.split("-")
+    src_lang, tgt_lang = direction.split("-")
     dev_samples = []
     for sample in tqdm.tqdm(dataset["validation"], desc="Processing samples"):
         # wmt dataset from huggingface format
