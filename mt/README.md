@@ -31,7 +31,7 @@ Example call (run from the root directory):
 
 `CUDA_VISIBLE_DEVICES=1 python -m mt.translate --input_csv_file ./mt/data/wmt19_de-en.csv --output_csv_file ./mt/data/wmt19_de-en_translation100.csv --checkpoint_path ./checkpoints/lit-llama/7B/lit-llama.pth --tokenizer_path ./checkpoints/lit-llama/tokenizer.model --temperature 0.5 --top_k 200 --max_new_tokens 128`
 
-CUDA_VISIBLE_DEVICES=0 python -m mt.translate --input_csv_file ./mt/data/wmt19_en-zh.csv --output_csv_file ./mt/data/wmt19_en-zh_translation100.csv --temperature 0.5 --top_k 200 --max_new_tokens 128
+CUDA_VISIBLE_DEVICES=0 python -m mt.translate --input_csv_file ./mt/data/wmt19_en-zh.csv --output_csv_file ./mt/data/wmt19_en-zh_transl100_q8.csv --temperature 0.5 --top_k 200 --max_new_tokens 128 --quantize "llm.int8"
 
 !<o>! Temperature 0 breaks.
 
@@ -46,4 +46,4 @@ Inputs:
 
 `CUDA_VISIBLE_DEVICES=0 python -m mt.eval_translation --input_csv_file "./mt/data/wmt19_de-en_translation100.csv" --output_csv_file "./mt/data/wmt19_de-en_translation_eval.csv" --results_json_file "./mt/results/wmt19_de-en_results.json"`
 
-CUDA_VISIBLE_DEVICES=0 python -m mt.eval_translation --input_csv_file ./mt/data/wmt19_zh-en_translation100.csv --output_csv_file ./mt/data/wmt19_zh-en_translation100_eval.csv --results_json_file ./mt/results/wmt19_zh-en_results100.json
+CUDA_VISIBLE_DEVICES=0 python -m mt.eval_translation --input_csv_file ./mt/data/wmt19_de-en_transl100_q8.csv --output_csv_file ./mt/data/wmt19_de-en_transl100_q8_eval.csv --results_json_file ./mt/results/wmt19_de-en_results100_q8.json
