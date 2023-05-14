@@ -15,12 +15,12 @@ from lit_llama.utils import EmptyInitOnDevice, lazy_load, llama_model_lookup
 from generate import generate
 
 
-def main_translate(
-    input_csv_file: str = "./mt/data/wmt19_de-en.csv",
-    output_csv_file: str = "./mt/data/wmt19_de-en_translation.csv",
-    max_new_tokens: int = 128,
-    top_k: int = 200,
-    temperature: float = 0,
+def main_generate_mqm(
+    input_csv_file: str = "./mt-eval/mqm-classification/data/prompts_fewshot.csv",
+    output_csv_file: str = "./mt-eval/mqm-classification/data/fewshot_outputs.csv",
+    max_new_tokens: int = 5,
+    top_k: int = 100,
+    temperature: float = 0.5,
     checkpoint_path: Optional[Path] = None,
     tokenizer_path: Optional[Path] = None,
     quantize: Optional[str] = None,
@@ -62,10 +62,10 @@ def main_translate(
     L.seed_everything(1234)
     #################################################
     # load the csv with the prompts to generate on
-    df = pd.read_csv(input_csv_file)[:100]
+    df = pd.read_csv(input_csv_file)
     # generate output for each prompt
-    for i, row in tqdm.tqdm(df.iterrows(), total=len(df), desc="Translating..."):
-        prompt = row["input"]
+    for i, row in tqdm.tqdm(df.iterrows(), total=len(df), desc="Classifying..."):
+        prompt = row["prompt"]
         encoded_prompt = tokenizer.encode(
             prompt, bos=True, eos=False, device=fabric.device)
         y = generate(
@@ -81,16 +81,14 @@ def main_translate(
         )
         # extract just the translation
         try:
-            tgt_lang = row["tgt_lang"]
-            src = row["src"]
-            translation_match = re.search(
-                f"{src}\n{tgt_lang}:(.*)\n", tokenizer.decode(y))
-            if translation_match:
-                df.loc[i, "mt"] = translation_match.group(1)
+            pattern_output = re.compile(r"Output: (.*)\n")
+            match = pattern_output.search(tokenizer.decode(y))
+            if match:
+                df.loc[i, "me"] = match.group(1).strip()
         except:
             print(f"Error parsing output for row {i}: {row}")
     df.to_csv(output_csv_file, index=False)
 
 
 if __name__ == "__main__":
-    CLI(main_translate)
+    CLI(main_generate_mqm)

@@ -23,7 +23,8 @@ TODO: Which I think you have to manually put the tokenizer.model into the lit-ll
 ## Run inference with the `generate.py`
 
 ```bash
-CUDA_VISIBLE_DEVICES=1 python generate.py --prompt "Hello, my name is"
+CUDA_VISIBLE_DEVICES=1 python generate.py --prompt "Hello, my name is" --quantize "llm.int8"
+```
 ```
 
 So according to the README this loads it in full precision, unless it detects your GPU will choke, that then runs it on bfloat16 and takes 14GB, which checks out (13577MiB).

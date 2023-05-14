@@ -1,0 +1,8 @@
+{
+    "translated": "./mt/data/wmt19_de-en_transl100_q8.csv",
+    "eval": "./mt/data/wmt19_de-en_transl100_q8_eval.csv",
+    "samples": 96,
+    "bleu": 30.185657324536834,
+    "chrf": 56.47195019548686,
+    "wmt22-comet-da": 0.8209593612700701
+}
