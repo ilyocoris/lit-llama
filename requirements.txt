@@ -13,3 +13,4 @@ datasets
 langchain
 sacrebleu
 unbabel-comet
+scikit-learn

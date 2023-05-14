@@ -27,4 +27,19 @@ Output:
 ```
 TODO: Relevancy of space after :, " Minor" vs "Minor" in tokenization?
 
-Evaluation: F1-score, weighted accuracy (with output probs?)
+To generate the data (from the server) follow the `create_mqm_prompts.ipynb`.
+
+To generate the MQM classifications with llama, execute from the root directory:
+
+```
+CUDA_VISIBLE_DEVICES=1 python -m mt-eval.mqm-classification.classify --output_csv_file ./mt-eval/mqm-classification/data/fewshot_outputs.csv
+```
+!<o>! Check default values in code.
+
+Evaluation Results:
+
+```
+Accuracy: 0.3201465201465201
+F1 score: 0.32491751609229963
+```
+AKA random performance.
