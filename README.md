@@ -1,7 +1,7 @@
 <div align="center">
 <img src="https://pl-public-data.s3.amazonaws.com/assets_lightning/Lit_LLaMA_Badge3x.png" alt="Lit-LLaMA" width="128"/>
 
-# ⚡ Lit-LLaMA ️
+# ⚡ Lit-LLaMA (statmt-main working branch) ️
 
 <!--
 <p align="center">
@@ -18,13 +18,14 @@
 </div>
 
 # ⚡ Lit-LLaMA ️
-Independent implementation of [LLaMA](<https://github.com/facebookresearch/llama>) that is fully open source under the **Apache 2.0 license.**
+
 
 This implementation builds on [nanoGPT](<https://github.com/karpathy/nanoGPT>).
 
 The original LLaMA weights are distributed by Meta under a [research-only license](https://github.com/facebookresearch/llama/blob/main/MODEL_CARD.md#model-details).
 
 New Apache 2.0 licensed weights are being released as part of the [Open LLaMA project](https://github.com/openlm-research/open_llama). Both can be [loaded in Lit-LLaMA](howto/download_weights.md).
+
 
 ## Why?
 
@@ -39,6 +40,7 @@ This "taints" any other code and prevents integration with the rest of the ecosy
 &nbsp;
 
 ## Design principles
+
 **Lit-LLaMA** is:
 
 - **Simple:** Single-file implementation without boilerplate.
@@ -47,6 +49,7 @@ This "taints" any other code and prevents integration with the rest of the ecosy
 - **Open-source:** No strings attached.
 
 ## Get involved!
+
 [Join our Discord](https://discord.gg/VptPCZkGNa) to build high-performance, truly open-source models for the common benefit of the community.
 
 &nbsp;
@@ -127,7 +130,9 @@ We provide a simple training scripts in `finetune_lora.py` and `finetune_adapter
    ```bash
    python finetune/lora.py
    ```
-   or 
+
+   or
+
    ```bash
    python finetune/adapter.py
    ```
@@ -175,7 +180,7 @@ Join us and start contributing, especially on the following areas:
 
 Look at `train.py` for a starting point towards pre-training / fine-tuning using [Lightning Fabric](https://lightning.ai/docs/fabric/stable/).
 
-We welcome all individual contributors, regardless of their level of experience or hardware. Your contributions are valuable, and we are excited to see what you can accomplish in this collaborative and supportive environment. 
+We welcome all individual contributors, regardless of their level of experience or hardware. Your contributions are valuable, and we are excited to see what you can accomplish in this collaborative and supportive environment.
 
 Unsure about contributing? Check out our [Contributing to Lit-LLaMA: A Hitchhiker’s Guide to the Quest for Fully Open-Source AI](https://lightning.ai/pages/community/tutorial/contributing-to-lit-llama-a-hitchhikers-guide-to-the-quest-for-fully-open-source-ai/) guide.
 
