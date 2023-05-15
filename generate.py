@@ -7,6 +7,10 @@ from typing import Optional
 import lightning as L
 import torch
 
+# support running without installing as a package
+wd = Path(__file__).parent.parent.resolve()
+sys.path.append(str(wd))
+
 from lit_llama import LLaMA, Tokenizer
 from lit_llama.utils import EmptyInitOnDevice, lazy_load, llama_model_lookup
 
@@ -46,7 +50,7 @@ def generate(
         # ignore the not-filled-yet tokens
         idx_cond = idx[:t]
         # if the sequence context is growing too long we must crop it at max_seq_length
-        idx_cond = idx_cond if T <= max_seq_length else idx_cond[-max_seq_length:]
+        idx_cond = idx_cond if t <= max_seq_length else idx_cond[-max_seq_length:]
 
         # forward
         logits = model(idx_cond.view(1, -1))
@@ -77,8 +81,8 @@ def main(
     max_new_tokens: int = 50,
     top_k: int = 200,
     temperature: float = 0.8,
-    checkpoint_path: Optional[Path] = None,
-    tokenizer_path: Optional[Path] = None,
+    checkpoint_path: Path = Path("checkpoints/lit-llama/7B/lit-llama.pth"),
+    tokenizer_path: Path = Path("checkpoints/lit-llama/tokenizer.model"),
     quantize: Optional[str] = None,
 ) -> None:
     """Generates text samples based on a pre-trained LLaMA model and tokenizer.
@@ -96,10 +100,6 @@ def main(
             ``"llm.int8"``: LLM.int8() mode,
             ``"gptq.int4"``: GPTQ 4-bit mode.
     """
-    if not checkpoint_path:
-        checkpoint_path = Path(f"./checkpoints/lit-llama/7B/lit-llama.pth")
-    if not tokenizer_path:
-        tokenizer_path = Path("./checkpoints/lit-llama/tokenizer.model")
     assert checkpoint_path.is_file(), checkpoint_path
     assert tokenizer_path.is_file(), tokenizer_path
 
@@ -123,22 +123,25 @@ def main(
     model = fabric.setup_module(model)
 
     tokenizer = Tokenizer(tokenizer_path)
-    encoded_prompt = tokenizer.encode(prompt, bos=True, eos=False, device=fabric.device)
+    encoded = tokenizer.encode(prompt, bos=True, eos=False, device=fabric.device)
+    prompt_length = encoded.size(0)
 
     L.seed_everything(1234)
     for i in range(num_samples):
         t0 = time.perf_counter()
         y = generate(
             model,
-            encoded_prompt,
+            encoded,
             max_new_tokens,
             model.config.block_size,  # type: ignore[union-attr,arg-type]
             temperature=temperature,
             top_k=top_k,
         )
         t = time.perf_counter() - t0
+
         print(tokenizer.decode(y))
-        print(f"Time for inference {i + 1}: {t:.02f} sec total, {max_new_tokens / t:.02f} tokens/sec", file=sys.stderr)
+        tokens_generated = y.size(0) - prompt_length
+        print(f"Time for inference {i + 1}: {t:.02f} sec total, {tokens_generated / t:.02f} tokens/sec", file=sys.stderr)
     if fabric.device.type == "cuda":
         print(f"Memory used: {torch.cuda.max_memory_reserved() / 1e9:.02f} GB", file=sys.stderr)
 

@@ -10,16 +10,16 @@ import lightning as L
 import torch
 import tqdm
 
-from lit_llama import LLaMA, Tokenizer
+# support running without installing as a package
+wd = Path(__file__).parent.parent.resolve()
+sys.path.append(str(wd))
+
+from lit_llama import Tokenizer
+from lit_llama.adapter import LLaMA
 from lit_llama.utils import EmptyInitOnDevice, lazy_load, llama_model_lookup
-from lit_llama.lora import lora
 from scripts.prepare_alpaca import generate_prompt
 
 from datasets import load_dataset
-
-lora_r = 8
-lora_alpha = 16
-lora_dropout = 0.05
 
 
 def load_eval_data(dataset_name: str) -> str:
@@ -51,40 +51,30 @@ def main(
     # compilation fails as it does not support torch.complex64 for RoPE
     # compile: bool = False,
     accelerator: str = "auto",
-    lora_path: Optional[Path] = None,
-    checkpoint_path: Optional[Path] = None,
-    tokenizer_path: Optional[Path] = None,
+    adapter_path: Path = Path("out/adapter/alpaca/lit-llama-adapter-finetuned.pth"),
+    checkpoint_path: Path = Path("checkpoints/lit-llama/7B/lit-llama.pth"),
+    tokenizer_path: Path = Path("checkpoints/lit-llama/tokenizer.model"),
     dtype: str = "float32",
     quantize: Optional[str] = None,
 ) -> None:
-    """Generates text samples based on a pre-trained LLaMA model and tokenizer
-       finetuned with LoRA.
+    """Generates text samples based on a pre-trained LLaMA model and tokenizer.
 
     Args:
         datasets: The datasets to use as a comma separated string
         # compile: Whether to compile the model.
         accelerator: The hardware to run on. Possible choices are:
             ``"cpu"``, ``"cuda"``, ``"mps"``, ``"gpu"``, ``"tpu"``, ``"auto"``.
-        lora_path: Path to the checkpoint with trained LoRA weights, which are the output of
-            `finetune_lora.py`.
+        adapter_path: Path to the checkpoint with trained adapter weights, which are the output of
+            `finetune_adapter.py`.
         checkpoint_path: The checkpoint path to load.
         tokenizer_path: The tokenizer path to load.
         quantize: Whether to quantize the model and using which method:
             ``"llm.int8"``: LLM.int8() mode,
             ``"gptq.int4"``: GPTQ 4-bit mode.
     """
-    if not lora_path:
-        lora_path = Path("out/lora/alpaca/lit-llama-lora-finetuned.pth")
-    if not checkpoint_path:
-        checkpoint_path = Path(f"./checkpoints/lit-llama/7B/lit-llama.pth")
-    if not tokenizer_path:
-        tokenizer_path = Path("./checkpoints/lit-llama/tokenizer.model")
-    assert lora_path.is_file()
+    assert adapter_path.is_file()
     assert checkpoint_path.is_file()
     assert tokenizer_path.is_file()
-
-    if quantize is not None:
-        raise NotImplementedError("Quantization in LoRA is not supported yet")
 
     fabric = L.Fabric(accelerator=accelerator, devices=1)
 
@@ -93,24 +83,22 @@ def main(
         raise ValueError(f"{dtype} is not a valid dtype.")
     dtype = dt
 
-    print("Loading model ...", file=sys.stderr)
-    t0 = time.time()
-
-    pretrained_checkpoint = lazy_load(checkpoint_path)
-    adapter_checkpoint = lazy_load(lora_path)
-    name = llama_model_lookup(pretrained_checkpoint)
-
     with EmptyInitOnDevice(
         device=fabric.device, dtype=dtype, quantization_mode=quantize
-    ), lora(r=lora_r, alpha=lora_alpha, dropout=lora_dropout, enabled=True):
+    ):
+        print("Loading model ...", file=sys.stderr)
+        t0 = time.time()
+        pretrained_checkpoint = lazy_load(checkpoint_path)
+        adapter_checkpoint = lazy_load(adapter_path)
+        name = llama_model_lookup(pretrained_checkpoint)
         model = LLaMA.from_name(name)
 
-    # 1. Load the pretrained weights
-    model.load_state_dict(pretrained_checkpoint, strict=False)
-    # 2. Load the fine-tuned adapter weights
-    model.load_state_dict(adapter_checkpoint, strict=False)
+        # 1. Load the pretrained weights
+        model.load_state_dict(pretrained_checkpoint, strict=False)
+        # 2. Load the fine-tuned adapter weights
+        model.load_state_dict(adapter_checkpoint, strict=False)
 
-    print(f"Time to load model: {time.time() - t0:.02f} seconds.", file=sys.stderr)
+        print(f"Time to load model: {time.time() - t0:.02f} seconds.", file=sys.stderr)
 
     model.eval()
 
@@ -127,7 +115,7 @@ def main(
 
         sample = {"instruction": test_string, "input": input}
         test_string = generate_prompt(sample)
-        
+
         encoded_text = tokenizer.encode(
             test_string, bos=True, eos=False, device=fabric.device
         )
@@ -150,7 +138,6 @@ def main(
                 nlls += nll.item()
 
         print(encoded_text.shape, logits.shape)
-        encoded_text = encoded_text[:, : logits.shape[0]]
         ppl = math.exp(nlls / toks)
         print(f"Perplexity on {dsname}: {ppl:.2f}")
         total_toks += toks

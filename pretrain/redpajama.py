@@ -1,4 +1,5 @@
 import os
+import sys
 import math
 import glob
 import time
@@ -14,6 +15,10 @@ from torch.utils.data import DataLoader
 from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy
 
 import numpy as np
+
+# support running without installing as a package
+wd = Path(__file__).parent.parent.resolve()
+sys.path.append(str(wd))
 
 from lit_llama.model import Block, LLaMA, LLaMAConfig
 from lit_llama.packed_dataset import PackedDataset, CombinedDataset
@@ -57,8 +62,8 @@ data_config = [
 
 def main(
     devices: int = 4,
-    train_data_dir: Path = "data/red_pajama",
-    val_data_dir: Path = "data/red_pajama_val",
+    train_data_dir: Path = "data/lit-redpajama",
+    val_data_dir: Optional[Path] = None,
 ) -> None:
     auto_wrap_policy = partial(
         transformer_auto_wrap_policy, transformer_layer_cls={Block}
@@ -86,7 +91,10 @@ def main(
         val_data_dir=val_data_dir,
         seed=1338,
     )
-    train_dataloader, val_dataloader = fabric.setup_dataloaders(train_dataloader, val_dataloader)
+    if val_dataloader is None:
+        train_dataloader = fabric.setup_dataloaders(train_dataloader)
+    else:
+        train_dataloader, val_dataloader = fabric.setup_dataloaders(train_dataloader, val_dataloader)
 
     with fabric.device:
         torch.set_default_dtype(torch.bfloat16)
@@ -165,7 +173,7 @@ def train(
 
             t1 = time.time()
 
-            if step_count % eval_interval == 0:
+            if val_dataloader is not None and step_count % eval_interval == 0:
                 val_loss = validate(fabric, model, val_dataloader)
                 fabric.print(f"step {iter_num}: val loss {val_loss:.4f}")
                 fabric.barrier()
@@ -258,8 +266,8 @@ def create_dataloaders(
     batch_size: int,
     block_size: int,
     fabric,
-    train_data_dir: str = "data/red_pajama",
-    val_data_dir: str = "data/red_pajama_val",
+    train_data_dir: str = "data/lit-redpajama",
+    val_data_dir: Optional[str] = None,
     seed: int = 12345,
 ) -> Tuple[DataLoader, DataLoader]:
     # Increase by one because we need the next word as well

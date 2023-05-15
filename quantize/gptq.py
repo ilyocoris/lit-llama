@@ -10,6 +10,10 @@ from typing import Optional
 import torch
 from datasets import load_dataset
 
+# support running without installing as a package
+wd = Path(__file__).parent.parent.resolve()
+sys.path.append(str(wd))
+
 from lit_llama import LLaMA, Tokenizer
 from lit_llama.quantization import GPTQQuantizer
 from lit_llama.utils import EmptyInitOnDevice, llama_model_lookup
@@ -136,9 +140,9 @@ def llama_blockwise_quantization(
 
 def main(
     *,
-    checkpoint_path: Optional[Path] = None,
+    checkpoint_path: Path = Path("checkpoints/lit-llama/7B/lit-llama.pth"),
     output_path: Optional[Path] = None,
-    tokenizer_path: Optional[Path] = None,
+    tokenizer_path: Path = Path("checkpoints/lit-llama/tokenizer.model"),
     n_samples: int = 128,
     dtype: str = "float32",
     quantize: Optional[str] = None,
@@ -156,10 +160,6 @@ def main(
             ``"gptq.int4"``: GPTQ 4-bit mode.
             Note that ``"llm.int8"```does not need a quantization step.
     """
-    if not checkpoint_path:
-        checkpoint_path = Path(f"./checkpoints/lit-llama/7B/lit-llama.pth")
-    if not tokenizer_path:
-        tokenizer_path = Path("./checkpoints/lit-llama/tokenizer.model")
     assert checkpoint_path.is_file()
     assert tokenizer_path.is_file()
     assert output_path.parent.is_dir() and (

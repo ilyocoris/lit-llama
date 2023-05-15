@@ -4,6 +4,8 @@ Instruction-tuning on the Alpaca dataset using a regular finetuning procedure (u
 Note: If you run into a CUDA error "Expected is_sm80 to be true, but got false", uncomment the line
 `torch.backends.cuda.enable_flash_sdp(False)` in the script below (see https://github.com/Lightning-AI/lit-llama/issues/101).
 """
+import sys
+from pathlib import Path
 import os
 import time
 from functools import partial
@@ -13,6 +15,10 @@ from lightning.fabric.strategies import FSDPStrategy
 import numpy as np
 import torch
 from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy
+
+# support running without installing as a package
+wd = Path(__file__).parent.parent.resolve()
+sys.path.append(str(wd))
 
 from generate import generate
 from lit_llama.model import Block, LLaMA, LLaMAConfig
@@ -97,7 +103,7 @@ def train(
 
     for iter_num in range(max_iters):
 
-        is_accumulating = (iter_num + 1) % gradient_accumulation_steps == 0
+        is_accumulating = (iter_num + 1) % gradient_accumulation_steps != 0
 
         if step_count <= warmup_steps:
             # linear warmup

@@ -10,6 +10,10 @@ import lightning as L
 import torch
 import tqdm
 
+# support running without installing as a package
+wd = Path(__file__).parent.parent.resolve()
+sys.path.append(str(wd))
+
 from lit_llama import LLaMA, Tokenizer
 from lit_llama.utils import EmptyInitOnDevice
 
@@ -46,7 +50,7 @@ def main(
     # compile: bool = False,
     accelerator: str = "auto",
     checkpoint_path: Optional[Path] = None,
-    tokenizer_path: Optional[Path] = None,
+    tokenizer_path: Path = Path("checkpoints/lit-llama/tokenizer.model"),
     model_size: str = "7B",
     dtype: str = "float32",
     quantize: Optional[str] = None,
@@ -65,9 +69,7 @@ def main(
             ``"gptq.int4"``: GPTQ 4-bit mode.
     """
     if not checkpoint_path:
-        checkpoint_path = Path(f"./checkpoints/lit-llama/{model_size}/lit-llama.pth")
-    if not tokenizer_path:
-        tokenizer_path = Path("./checkpoints/lit-llama/tokenizer.model")
+        checkpoint_path = Path(f"checkpoints/lit-llama/{model_size}/lit-llama.pth")
     assert checkpoint_path.is_file()
     assert tokenizer_path.is_file()
 
@@ -122,7 +124,6 @@ def main(
                 nlls += nll.item()
 
         print(encoded_text.shape, logits.shape)
-        encoded_text = encoded_text[:, : logits.shape[0]]
         ppl = math.exp(nlls / toks)
         print(f"Perplexity on {dsname}: {ppl:.2f}")
         total_toks += toks
